@@ -1,46 +1,105 @@
 # Day-Ahead Wind Forecast Portal
 
-A React dashboard and read-only FastAPI service for reviewing wind generation forecasts used in day-ahead power buying. It shows the latest eligible WINDFOR forecast at a configurable cutoff and its historical accuracy against FUELHH wind actuals. The deployed app reads only files under `data/processed/`; it never calls Elexon.
+## Summary
 
-## Scope and assumptions
+This React dashboard and read-only FastAPI service replays UK day-ahead wind buying decisions and evaluates WINDFOR forecasts against Elexon FUELHH wind actuals. For a delivery day D, the decision cutoff is 09:00 Europe/London on D-1; for each target start time, the selected forecast is the WINDFOR row with the latest `publishTime` at or before that cutoff. Hourly forecasts are aligned to half-hour periods. The deployed app reads the committed files in `data/processed/` and does not call Elexon.
 
-- “Decisions made in January 2026” means decisions on Jan 1–31, so delivery days are Jan 2–Feb 1, 2026.
-- A decision for delivery day D uses the prior day cutoff in Europe/London (default 09:00).
-- For each target start time, selection uses the row with the maximum WINDFOR `publishTime` at or before the cutoff. Hourly forecasts are repeated across the two half-hour periods.
-- The snapshot uses Elexon FUELHH (WIND) actuals and WINDFOR forecasts only. Actuals cover Dec 18, 2025 through Feb 1, 2026; this lookback supports the D-8 through D-2 correction while the scored decision window remains 31 delivery days.
-- The dashboard shows raw and bias-corrected MAE and P90 buffer with intervals, plus separate bias and spread. Its sample size is 744 hourly forecasts. It states the one-month limit and labels the empirical uncertainty band as in-sample.
+**Live app:** [https://kjhwr-mu.vercel.app](https://kjhwr-mu.vercel.app)
 
-## Files and directories
+## Repository guide
 
-- `frontend/` contains the Vite, React and TypeScript dashboard.
-- `backend/app/` contains API routes, configuration, selection, and metrics.
-- `backend/pipeline/fetch.py` downloads source snapshots locally; `build.py` normalizes them and builds the cache; `build_cache.py` can rebuild the cache alone.
-- `backend/tests/` contains selection, metric, API, and cache acceptance tests.
-- `api/index.py` and `vercel.json` configure the Vercel function, frontend build, processed data bundle, and SPA routes.
-- `data/processed/` contains actuals, forecasts, the decision table, and `cache/` JSON for each selection outcome and mode. `data/raw/` is local pipeline input and is not included in the app.
-- `Dockerfile` and `docker-compose.yml` run the API and dashboard together. `docs/notes.md` records the phase results.
+- `backend/app/` — FastAPI routes, data loading, forecast selection, schemas, and accuracy metrics.
+- `backend/pipeline/` — `fetch.py` downloads source snapshots; `build.py` normalizes them into processed CSVs and the cache; `build_cache.py` rebuilds the cache from processed data.
+- `backend/tests/` — API, metric, forecast-selection, Vercel path, and cache acceptance tests.
+- `api/index.py` — Vercel FastAPI entry point and path-restoring middleware.
+- `frontend/` — React, TypeScript, and Vite dashboard, with local npm scripts in `frontend/package.json`.
+- `frontend/scripts/copy-to-public.mjs` — copies the built frontend to the project-root `public/` directory for Vercel static serving.
+- `data/processed/` — committed actuals, forecasts, decision table, and `cache/` JSON summaries/charts for cutoff-selection outcomes and modes.
+- `docs/notes.md` — detailed data, method, acceptance, and analysis verification log.
+- `Dockerfile` — builds the frontend and packages the API and processed data into one image.
+- `docker-compose.yml` — runs the container and maps port 8000.
+- `vercel.json` — frontend build/output settings, API bundle inclusion, and API/SPA rewrites.
+- `requirements.txt` — Python runtime dependencies.
 
-## Start locally
+## Run locally
 
-For local development, install `requirements.txt` in a Python environment, run `uvicorn backend.app.main:app --reload` from the repository root, then in a second terminal run `cd frontend`, `npm ci`, and `npm run dev`. Vite serves the dashboard and proxies `/api` to FastAPI at port 8000. The API docs are at `http://localhost:8000/docs`.
+From the repository root, create and activate a virtual environment, then install Python requirements:
 
-To build and run the complete app in Docker, run `docker compose up --build` from the repository root. The app is at `http://localhost:8000`, with API docs at `/docs`.
+```sh
+python -m venv .venv
+# macOS/Linux
+. .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
 
-Docker close-out was verified on this machine: the image built and the container started; `GET /docs` returned 200, `GET /api/health` returned `200 {"status":"ok"}`, and `GET /accuracy` returned `200 text/html; charset=utf-8`.
+Start the backend in one terminal:
 
-To refresh the snapshot, run `python -m backend.pipeline.fetch`, then `python -m backend.pipeline.build`. The build step creates `data/processed/cache/*.json`. The API startup only loads those JSON files; it does not fetch Elexon or recalculate the summaries, bootstrap intervals, or chart tables.
+```sh
+uvicorn backend.app.main:app --reload
+```
 
-## Vercel
+Start the frontend in a second terminal:
 
-Frontend API requests use relative `/api/...` paths. `vercel.json` builds the frontend, routes API requests to the Python function, includes `data/processed/**` (including `cache/`) in the function bundle, and rewrites client-side paths to the app shell. **Live app: [https://kjhwr-mu.vercel.app](https://kjhwr-mu.vercel.app).**
+```sh
+cd frontend
+npm ci
+npm run dev
+```
 
-## Limitations and next step
+Open the Vite URL printed by the dev server (usually `http://localhost:5173`). The backend API docs are at `http://localhost:8000/docs`.
 
-- The scored sample is one month (31 delivery days; 744 hourly forecasts), so it does not establish year-round performance.
-- The delivery-day bootstrap treats days as independent and ignores multi-day autocorrelation; its confidence intervals may be optimistic.
-- The trailing correction is evaluated in-sample on this month, using a fixed D-8 through D-2 window; it is descriptive, not independent validation.
-- A multiplicative correction is a next step to validate: on this sample it had MAE/P90 1,444/3,071 MW, compared with 1,619/3,336 MW for the constant offset and 2,042/4,140 MW raw. This comparison did not change the correction model.
+Run the backend tests from the repository root:
+
+```sh
+python -m pytest -q
+```
+
+Run the full app in Docker from the repository root:
+
+```sh
+docker compose up --build
+```
+
+Open the dashboard at `http://localhost:8000` and API docs at `http://localhost:8000/docs`.
+
+## Data refresh
+
+The raw Elexon snapshots under `data/raw/` are intentionally not committed and require network access. Set `BMRS_API_BASE` to the Elexon dataset API base URL, then run these commands from the repository root:
+
+```sh
+python -m backend.pipeline.fetch
+python -m backend.pipeline.build
+```
+
+The fetch step writes `data/raw/fuelhh.json` and `data/raw/windfor.json`; the build step writes processed CSVs and regenerates `data/processed/cache/*.json`. To rebuild only the cache from existing processed data, run:
+
+```sh
+python -m backend.pipeline.build_cache
+```
+
+## Scope and method
+
+“Purchase decisions made in January 2026” means decisions from January 1–31, with delivery days January 2 through February 1, 2026. FUELHH actuals from December 18, 2025 onward are fetched as lookback data for the trailing bias correction; those earlier actuals are not part of the January decision sample.
+
+The scored set contains **744 hourly forecasts** aligned to **1,488 half-hour points**. The raw forecast has MAE **2,041.96 MW**, bias **+1,747.89 MW**, and a P90 buffer of **4,140.10 MW** (90% day-bootstrap CI **3,250.91–5,317.80 MW**). The trailing bias-corrected result has MAE **1,619 MW** and P90 **3,336 MW**. Paired raw-minus-corrected changes are **+422.84 MW** for MAE (90% CI **+165.02 to +673.75 MW**) and **+803.83 MW** for P90 (90% CI **+403.02 to +1,529.38 MW**).
+
+The displayed P90 buffer is the 90th percentile of `max(forecast - actual, 0)` across all valid half-hours, including zero error values whenever actual wind met or exceeded forecast. Thus the card wording is: “In 90% of half-hours, actual wind came in no more than X MW below forecast.”
+
+The positive bias is similar across forecast horizons, including forecasts published after the target hour. This indicates a forecast-versus-FUELHH definitional gap rather than forecast skill; the cause has not been established. WINDFOR publishes at 02:30, 04:30, 07:30, 09:30, 11:30, 15:30, 18:30, and 22:30 UTC. The 09:00 Europe/London cutoff selects the 07:30 UTC publish, 1.5 hours old. Cutoffs from 07:30 through 09:29 select the same publications and produce identical results. Later cutoffs show no demonstrated accuracy gain. See [the verification log](docs/notes.md) for the detailed checks and cutoff analysis.
+
+## Deployment
+
+Vercel builds the frontend and `frontend/scripts/copy-to-public.mjs` copies `frontend/dist/` into the project-root `public/` directory configured by `vercel.json`. `/api/*` is rewritten to `api/index.py`; middleware restores the original API path. The function bundle includes `data/processed/**`, including the JSON cache. Docker serves the API and dashboard from one container.
 
 ## AI use
 
-AI coding tools assisted with scaffolding, implementation, and documentation. The project’s maintainers reviewed the code, selection rule, assumptions, and analysis.
+AI tools (an AI coding assistant and Claude) were used to help plan, write, and review the code, tests, and documentation. The analysis choices and reported numbers were checked against the raw data.
+
+## Limitations and next step
+
+- The analysis covers one January decision month and 31 delivery days.
+- The day-level bootstrap ignores multi-day autocorrelation, so its intervals are optimistic.
+- The trailing seven-day bias correction is descriptive and in-sample; it has not been independently validated.
+- A multiplicative correction looked better on this sample (MAE **1,444 MW**, P90 **3,071 MW**) than the constant-offset correction (MAE **1,619 MW**, P90 **3,336 MW**) or raw forecast (MAE **2,042 MW**, P90 **4,140 MW**), but it was not adopted.
+- Hourly forecasts are forward-filled to two half-hour periods.

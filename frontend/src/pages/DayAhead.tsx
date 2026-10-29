@@ -147,8 +147,8 @@ export default function DayAhead({ cutoff, mode, deliveryDays, selectedDay, onSe
             <article className="panel buffer-panel">
               <div className="buffer-icon">↓</div>
               <span className="eyebrow">PROCUREMENT BUFFER</span>
-              <h3>Plan for less wind</h3>
-              <p>Historical P90 over-forecast risk at the selected cutoff and mode.</p>
+              <h3>P90 procurement buffer</h3>
+              <p>Based on the 90th percentile of positive forecast error across all valid half-hours, with zero for periods when forecast did not exceed actual.</p>
               <div className="buffer-number">{number(summary.buffer_p90_mw)} <span>MW</span></div>
               <div className="buffer-ci">90% day-bootstrap interval <strong>{number(summary.buffer_p90_ci_low_mw)}–{number(summary.buffer_p90_ci_high_mw)} MW</strong></div>
               <div className="buffer-callout">In 90% of half-hours, actual wind came in no more than <strong>{number(summary.buffer_p90_mw)} MW</strong> below forecast.</div>
