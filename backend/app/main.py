@@ -10,8 +10,8 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.app.config import DEFAULT_CUTOFF, LOCAL_ZONE, PROCESSED_DIR, ROOT_DIR, WINDOW_END, WINDOW_START
@@ -52,6 +52,17 @@ async def _lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Day-Ahead Wind Forecast API", version="1.0.0", lifespan=_lifespan)
+
+
+@app.exception_handler(404)
+async def not_found(request: Request, _error: HTTPException) -> JSONResponse:
+    """Include the path so a serverless rewrite mismatch is visible in the response."""
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Not found", "path": request.scope["path"]},
+    )
+
+
 _OUTCOME_BREAKPOINTS: list[time] = []
 _BREAKPOINT_OUTCOME_IDS: list[int] = []
 _OUTCOME_TABLES: dict[int, dict[Mode, list[dict[str, object]]]] = {}

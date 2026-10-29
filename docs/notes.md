@@ -44,3 +44,8 @@ Why: keep all summaries, bootstrap intervals, and chart tables ready without rec
 Acceptance: pytest: 19 passed; all cached summaries, bootstrap intervals, and chart tables matched fresh calculations; cache load measured 115.9 ms; frontend `npm run build` succeeded.
 Deployment setup: Vercel uses relative `/api` calls, bundles `data/processed/**`, builds `frontend/dist`, and has API and SPA rewrites; `.gitignore` excludes node_modules, venv, and `.env`, while processed data is not ignored.
 Trade-off: no live URL or commit status can be verified because this workspace has no `.git` repository and deployment remains user-owned; paired bootstrap intervals may be optimistic under autocorrelation.
+Phase 6 Vercel route fix - What: passed the rewritten route suffix through `__path` and restored it in pure ASGI middleware.
+Why: avoid depending on which rewritten URL path the Vercel Python function exposes to FastAPI.
+Acceptance: `pytest -q`: 24 passed; health, summary with cutoff/mode, direct API path, query preservation, and diagnostic 404 path all pass.
+Response detail: unmatched 404s now include the received scope path; ordinary local/Docker requests pass through without middleware changes.
+Trade-off: the live deployment was not redeployed or rechecked; the fix is local for the user-owned deploy.
