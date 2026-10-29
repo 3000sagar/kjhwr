@@ -6,8 +6,12 @@ const DayAhead = lazy(() => import('./pages/DayAhead'))
 
 type Page = 'day' | 'accuracy'
 
+function pageFromPath(pathname: string): Page {
+  return pathname.replace(/\/+$/, '') === '/accuracy' ? 'accuracy' : 'day'
+}
+
 export default function App() {
-  const [page, setPage] = useState<Page>('day')
+  const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname))
   const [cutoff, setCutoff] = useState('09:00')
   const [mode, setMode] = useState<Mode>('raw')
   const [deliveryDays, setDeliveryDays] = useState<DeliveryDay[]>([])
@@ -31,6 +35,20 @@ export default function App() {
 
   const title = page === 'day' ? 'Day-ahead view' : 'Forecast accuracy'
 
+  useEffect(() => {
+    const syncPageFromUrl = () => setPage(pageFromPath(window.location.pathname))
+    window.addEventListener('popstate', syncPageFromUrl)
+    return () => window.removeEventListener('popstate', syncPageFromUrl)
+  }, [])
+
+  function navigate(nextPage: Page) {
+    const nextPath = nextPage === 'accuracy' ? '/accuracy' : '/'
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath)
+    }
+    setPage(nextPage)
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -43,10 +61,10 @@ export default function App() {
         </div>
         <div className="sidebar-section-label">WORKSPACE</div>
         <nav className="side-nav" aria-label="Dashboard pages">
-          <button className={page === 'day' ? 'nav-item active' : 'nav-item'} onClick={() => setPage('day')}>
+          <button className={page === 'day' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('day')}>
             <span className="nav-glyph">◷</span><span>Day ahead</span><span className="nav-arrow">›</span>
           </button>
-          <button className={page === 'accuracy' ? 'nav-item active' : 'nav-item'} onClick={() => setPage('accuracy')}>
+          <button className={page === 'accuracy' ? 'nav-item active' : 'nav-item'} onClick={() => navigate('accuracy')}>
             <span className="nav-glyph">⌁</span><span>Accuracy</span><span className="nav-arrow">›</span>
           </button>
         </nav>

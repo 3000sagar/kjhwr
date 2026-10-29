@@ -32,7 +32,7 @@ To refresh the snapshot, run `python -m backend.pipeline.fetch`, then `python -m
 
 ## Vercel
 
-Frontend API requests use relative `/api/...` paths. `vercel.json` builds the frontend, routes API requests to the Python function, includes `data/processed/**` (including `cache/`) in the function bundle, and rewrites client-side paths to the app shell. The deployment is not yet created; deployment and the live URL are user-owned. **Live app URL: pending deployment.** After deployment, record the URL here and check the app and API docs in an incognito window.
+Frontend API requests use relative `/api/...` paths. `vercel.json` builds the frontend, routes API requests to the Python function, includes `data/processed/**` (including `cache/`) in the function bundle, and rewrites client-side paths to the app shell. **Live app: [https://kjhwr-mu.vercel.app](https://kjhwr-mu.vercel.app).**
 
 ## Limitations and next step
 

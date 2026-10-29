@@ -85,8 +85,8 @@ export default function DayAhead({ cutoff, mode, deliveryDays, selectedDay, onSe
       <section className="page-intro day-intro">
         <div>
           <div className="eyebrow">BUYING DESK <span>/</span> WIND SUPPLY</div>
-          <h2>Tomorrow’s wind position</h2>
-          <p>Latest forecast available at the decision cutoff, aligned to half-hour delivery periods.</p>
+          <h2>Day-ahead position - replay of {selectedDay}</h2>
+          <p>Latest forecast available at the decision cutoff, aligned to half-hour delivery periods. Actuals are shown for evaluation only and would not be known at the decision time.</p>
         </div>
         <label className="date-picker">
           <span>DELIVERY DAY</span>
@@ -151,7 +151,7 @@ export default function DayAhead({ cutoff, mode, deliveryDays, selectedDay, onSe
               <p>Historical P90 over-forecast risk at the selected cutoff and mode.</p>
               <div className="buffer-number">{number(summary.buffer_p90_mw)} <span>MW</span></div>
               <div className="buffer-ci">90% day-bootstrap interval <strong>{number(summary.buffer_p90_ci_low_mw)}–{number(summary.buffer_p90_ci_high_mw)} MW</strong></div>
-              <div className="buffer-callout">Plan for up to <strong>{number(summary.buffer_p90_mw)} MW less wind</strong> than forecast, based on historical over-forecast errors.</div>
+              <div className="buffer-callout">In 90% of half-hours, actual wind came in no more than <strong>{number(summary.buffer_p90_mw)} MW</strong> below forecast.</div>
               <div className="buffer-footer">31 delivery days · {summary.n_hourly_forecasts} hourly forecasts</div>
             </article>
           </section>
