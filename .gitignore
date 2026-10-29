@@ -1,0 +1,14 @@
+implementation_plan.md
+data/raw/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+.vercel/
+.env
+.env.*
+!.env.example
