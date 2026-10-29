@@ -93,7 +93,15 @@ export interface HistogramBin {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(path)
+  const requestUrl = new URL(path, window.location.href).href
+  let response: Response
+  try {
+    // Keep the request relative so the same frontend works on local and hosted origins.
+    response = await fetch(path)
+  } catch (reason) {
+    throw new Error(`HTTP status unavailable for ${requestUrl}: ${errorMessage(reason)}`)
+  }
+
   if (!response.ok) {
     let detail = `Request failed (${response.status})`
     try {
@@ -102,9 +110,18 @@ async function getJson<T>(path: string): Promise<T> {
     } catch {
       // Keep the HTTP status text when an error body is not JSON.
     }
-    throw new Error(detail)
+    throw new Error(`HTTP ${response.status} for ${requestUrl}: ${detail}`)
   }
-  return response.json() as Promise<T>
+
+  try {
+    return await response.json() as T
+  } catch (reason) {
+    throw new Error(`HTTP ${response.status} for ${requestUrl}: invalid JSON response (${errorMessage(reason)})`)
+  }
+}
+
+function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason)
 }
 
 function commonQuery(cutoff: string, mode: Mode): URLSearchParams {

@@ -181,6 +181,11 @@ tbody tr:hover { background: #f7faff; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error-banner, .global-error { border: 1px solid #f0d1ce; border-radius: 8px; padding: 11px 13px; color: #a24e47; background: #fff8f7; font-size: 11px; }
 .global-error { margin-bottom: 12px; }
+.fatal-error { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f7f9fc; }
+.fatal-error .global-error { width: min(100%, 560px); margin: 0; }
+.fatal-error h1 { margin: 0 0 8px; font-size: 18px; }
+.fatal-error p { overflow-wrap: anywhere; }
+.fatal-error button { margin-top: 8px; border: 1px solid #d7e0eb; border-radius: 6px; padding: 8px 12px; color: #24364d; background: #fff; cursor: pointer; }
 .page-footnote { display: flex; justify-content: space-between; gap: 18px; padding: 11px 38px 14px; border-top: 1px solid #e5eaf0; color: #98a3b0; font-size: 8px; }
 .page-footnote span:first-child { font: 500 8px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; white-space: nowrap; }
 

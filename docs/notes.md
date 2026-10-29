@@ -43,7 +43,12 @@ Phase 6 - What: added 20 precomputed JSON outcome/mode files plus a manifest; pi
 Why: keep all summaries, bootstrap intervals, and chart tables ready without recomputing at API startup.
 Acceptance: pytest: 19 passed; all cached summaries, bootstrap intervals, and chart tables matched fresh calculations; cache load measured 115.9 ms; frontend `npm run build` succeeded.
 Deployment setup: Vercel uses relative `/api` calls, bundles `data/processed/**`, builds `frontend/dist`, and has API and SPA rewrites; `.gitignore` excludes node_modules, venv, and `.env`, while processed data is not ignored.
-Trade-off: no live URL or commit status can be verified because this workspace has no `.git` repository and deployment remains user-owned; paired bootstrap intervals may be optimistic under autocorrelation.
+Trade-off: the prior workspace had no `.git` metadata, so deployment remained user-owned and the live URL was pending; paired bootstrap intervals may be optimistic under autocorrelation.
+Vercel static asset fix - What: the build now copies `frontend/dist` into the project-root `public/` output directory.
+Why: serve hashed JS and CSS files as Vercel static assets instead of letting SPA fallback return `index.html` for those paths.
+Acceptance: `npm ci --offline`, `npm run build`, and the copy script succeeded; root `public/index.html` and assets were created.
+Asset check: copied `index-DgIGXFq9.js` has the same SHA-256 as the Vite build output; `public/` is ignored as generated output.
+Trade-off: Vercel serves a copied build directory, so local `public/` is regenerated after each frontend build.
 Phase 6 Vercel route fix - What: passed the rewritten route suffix through `__path` and restored it in pure ASGI middleware.
 Why: avoid depending on which rewritten URL path the Vercel Python function exposes to FastAPI.
 Acceptance: `pytest -q`: 24 passed; health, summary with cutoff/mode, direct API path, query preservation, and diagnostic 404 path all pass.
